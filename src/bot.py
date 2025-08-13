@@ -1,8 +1,10 @@
+import asyncio
 import discord
 import os
 from discord.ext import commands
 import logging
 from dotenv import load_dotenv
+from logic import Iniciar_Adivinhação
 from models.Game import Game
 from models.Player import Player
 
@@ -29,20 +31,25 @@ async def on_ready():
 async def hello(ctx):
     await ctx.send(f"Hello, {ctx.author.name}!")
 
-
 @bot.command()
 async def init(ctx):
     if(ctx.guild.id not in games):
         games[ctx.guild.id] = Game(ctx.guild.id)
-    await ctx.send("Inicializando uma partida...\nDigite `R!play` para participar.")
+        await ctx.send("Inicializando uma partida...\nDigite `R!play` para participar.")
+        await asyncio.sleep(10)
+        await Iniciar_Adivinhação(ctx, games)
+    else:
+        await ctx.send("Já existe uma partida em andamento neste servidor. Use `R!play` para participar ou `R!close` para encerrar a partida.")
 
 @bot.command()
 async def play(ctx):
     if games[ctx.guild.id].verify_player(Player(ctx.author.id, ctx.author.name)):
         await ctx.send(f"{ctx.author.name}, você já está participando!")
-    else:
+    elif not games[ctx.guild.id].started:
         games[ctx.guild.id].add_player(Player(ctx.author.id, ctx.author.name))
         await ctx.send(f"{ctx.author.name} entrou na partida!")
+    else:
+        await ctx.send(f"{ctx.author.name}, a partida já começou! Você não pode entrar agora.")
 
 @bot.command()
 async def quit(ctx):
@@ -59,5 +66,10 @@ async def close(ctx):
         await ctx.send("Partida encerrada.")
     else:
         await ctx.send("Não há partida em andamento.")
+
+@bot.command()
+async def guess(ctx):
+    await 1
+
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
